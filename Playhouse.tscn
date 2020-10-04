@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://Gnomes/DefaultGnome.tscn" type="PackedScene" id=1]
+
+[node name="Playhouse" type="YSort"]
+
+[node name="DefaultGnome" parent="." instance=ExtResource( 1 )]
+position = Vector2( 57.067, 81.8679 )
+
+[node name="Walls" type="StaticBody2D" parent="."]
+collision_layer = 2
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Walls"]
+polygon = PoolVector2Array( -24, 0, 0, 0, 0, 136, 108, 136, 108, 0, 127, 0, 126, 235, -21, 235, -28, -24, 128, -24, 127, 0 )
