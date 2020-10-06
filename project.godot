@@ -21,8 +21,8 @@ config/icon="res://icon.png"
 
 [display]
 
-window/size/width=108
-window/size/height=234
+window/size/width=160
+window/size/height=355
 window/size/test_width=432
 window/size/test_height=936
 window/handheld/orientation="portrait"
@@ -71,8 +71,9 @@ ui_touch={
 2d_render/layer_1="globos"
 2d_physics/layer_1="globos"
 2d_render/layer_2="walls"
-2d_physics/layer_2="walls"
+2d_physics/layer_2="world"
 
 [rendering]
 
+quality/2d/use_pixel_snap=true
 environment/default_environment="res://default_env.tres"
