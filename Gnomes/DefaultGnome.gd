@@ -1,20 +1,22 @@
 extends KinematicBody2D
 
-#For state machine
-enum states {WALKING, GRABBED}
-var currState
+#enum for state machine
+enum {
+	IDLE,
+	PICK_DIR,
+	MOVE,
+	GRAB
+}
 
-#timers
-var _timer: float = 0;
-export var time_2_change: float = 2.0
+#Initial value of statemachine
+var state = IDLE
 
 #movement
-var velocity: = Vector2.ZERO
-var moving: bool = false
-export var speed := 500.0
-var _direction := Vector2.ZERO
+export var speed := 1000.0
+var direction := Vector2.ZERO
+var velocity := Vector2.ZERO
 
-#dragging
+# Position where we are going to store the touch position
 var drag_pos = Vector2()
 
 onready var anim_player: AnimationPlayer = $AnimationPlayer
@@ -22,45 +24,56 @@ onready var anim_tree: AnimationTree = $AnimationTree
 onready var anim_state = anim_tree.get("parameters/playback")
 
 func _ready():
-	currState = states.WALKING
+	#The cat decides it starts IDLE
+	state = IDLE
+	
+	#The cat decides it looks to the front at the start
+	anim_tree.set("parameters/Idle/blend_position", Vector2.DOWN)
 
 func _physics_process(delta):
-		
-	if currState == states.WALKING:
-		var direction := _choose_direction(delta)
+	#SUPER STATE MACHINE
+	match state:
+		IDLE:
+			velocity = Vector2.ZERO
+			idle_state()
+			
+		PICK_DIR:
+			pick_dir_state()
+			state = MOVE
+		MOVE:
+			move_state(delta)
+		GRAB:
+			pass
+				
+	velocity = move_and_slide(velocity)
+	print(velocity)
+	
+func pick_dir_state():
+	#select direction where it's going to move
+	direction = choose([Vector2.RIGHT, Vector2.UP, Vector2.DOWN, Vector2.LEFT])
+	
+	#Set animation positions
+	anim_tree.set("parameters/Idle/blend_position", direction)
+	anim_tree.set("parameters/Move/blend_position", direction)
 
-		if (direction != Vector2.ZERO):
-			anim_tree.set("parameters/Idle/blend_position", direction)
-			anim_tree.set("parameters/Move/blend_position", direction)
-			anim_state.travel("Move")
-			velocity = velocity.move_toward(direction * speed, delta)
-		else:
-			velocity = velocity.move_toward(Vector2.ZERO, delta)
-			anim_state.travel("Idle")
-#		print(direction)
-		move_and_slide(direction * speed * delta)
-		
-		
-func _choose_direction(delta: float) -> Vector2:
-	if (_timer <= 0 and moving): 						#the timer reaches 0
-		#the direction is randomized
-		_direction = Vector2(rand_range(-1.0, 1.0), rand_range(-1.0, 1.0))
-		_direction.normalized()
-		_timer = time_2_change
-		moving = false
-	elif (_timer <= 0 and not moving):
-		_direction = Vector2.ZERO
-		_timer = time_2_change
-		moving = true
-	_timer -= delta							#timer goes down
-	return _direction
-		
+	direction = direction.normalized()
+	
+func move_state(delta):	
+	#Travel to moving animation state
+	anim_state.travel("Move")
+	
+	#Move its position
+	velocity = direction * speed * delta
+
+func idle_state():
+	#If the cat decides it doesn't move, the animation changes to idle
+	anim_state.travel("Idle")
 
 func _input_event(viewport, event, shape_idx):
 	if event.is_action_pressed("ui_touch"):
 		get_tree().set_input_as_handled()
 		drag_pos = event.position
-		currState = states.GRABBED
+		state = GRAB
 		anim_state.travel("grabbed")
 	
 func _input(event):
@@ -70,14 +83,23 @@ func _input(event):
 	#mouse cursor is outside of Collision Shape
 	#Disables dragging if the user releases click
 	####
-	if currState == states.WALKING:
+	if state == MOVE:
 		return
 	
 	if event.is_action_released("ui_touch"):
 		drag_pos = Vector2()
-		currState = states.WALKING
+		state = MOVE
 	
 	
-	if currState == states.GRABBED and event is InputEventMouseMotion:
+	if state == GRAB and event is InputEventMouseMotion:
 		position += event.position - drag_pos
 		drag_pos = event.position
+
+func choose(array):
+	array.shuffle()
+	return array.front()
+
+
+func _on_Timer_timeout():
+	$Timer.wait_time = choose([0.5, 1, 1.5])
+	state = choose([IDLE, PICK_DIR])
