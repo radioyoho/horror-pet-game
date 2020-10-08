@@ -24,6 +24,9 @@ onready var anim_tree: AnimationTree = $AnimationTree
 onready var anim_state = anim_tree.get("parameters/playback")
 
 func _ready():
+	#Resets de seed for RNG
+	randomize()
+	
 	#The cat decides it starts IDLE
 	state = IDLE
 	
