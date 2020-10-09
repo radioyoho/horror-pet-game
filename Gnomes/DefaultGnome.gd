@@ -1,11 +1,18 @@
 extends KinematicBody2D
 
+const GnomeTools = preload("res://tools/GnomeTools.tres")
+
 #enum for state machine
 enum {
 	IDLE,
 	PICK_DIR,
 	MOVE,
-	GRAB
+	INTER
+}
+
+enum{
+	GRAB,
+	PET
 }
 
 #Initial value of statemachine
@@ -32,6 +39,12 @@ func _ready():
 	
 	#The cat decides it looks to the front at the start
 	anim_tree.set("parameters/Idle/blend_position", Vector2.DOWN)
+	
+	#Assign this gnome to the handler
+	GnomeTools.Gnome = self
+func _exit_tree():
+	#Deallocate this gnome if tree exits, I'm not sure what that means
+	GnomeTools.Gnome = null
 
 func _physics_process(delta):
 	#SUPER STATE MACHINE
@@ -45,11 +58,21 @@ func _physics_process(delta):
 			state = MOVE
 		MOVE:
 			move_state(delta)
-		GRAB:
-			pass
+		INTER:
+			#Here we see what tool they are using
+			inter_state()
 				
 	velocity = move_and_slide(velocity)
-	print(velocity)
+#	print(velocity)
+	
+func inter_state():
+	match GnomeTools.Tool:
+		GRAB:
+			velocity = Vector2.ZERO
+		PET:
+			velocity = Vector2.ZERO
+		
+		
 	
 func pick_dir_state():
 	#select direction where it's going to move
@@ -76,8 +99,9 @@ func _input_event(viewport, event, shape_idx):
 	if event.is_action_pressed("ui_touch"):
 		get_tree().set_input_as_handled()
 		drag_pos = event.position
-		state = GRAB
+		state = INTER
 		anim_state.travel("grabbed")
+		print("Grabin'")
 	
 func _input(event):
 
@@ -91,10 +115,10 @@ func _input(event):
 	
 	if event.is_action_released("ui_touch"):
 		drag_pos = Vector2()
-		state = MOVE
+		state = IDLE
 	
 	
-	if state == GRAB and event is InputEventMouseMotion:
+	if state == INTER and event is InputEventMouseMotion and GnomeTools.Tool == PET:
 		position += event.position - drag_pos
 		drag_pos = event.position
 
